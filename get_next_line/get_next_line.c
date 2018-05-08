@@ -6,67 +6,77 @@
 /*   By: hwolff <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/04/24 15:05:13 by hwolff            #+#    #+#             */
-/*   Updated: 2018/05/02 19:26:40 by hwolff           ###   ########.fr       */
+/*   Updated: 2018/05/07 15:15:28 by hwolff           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-int		ft_is_false(int fd, char **str, char **line)
+int		is_false(int fd, char **l)
 {
-	char buff[BUFF_SIZE + 1];
+	char b[BUFF_SIZE + 1];
 
-	if (read(fd, buff, 0) < 0)
+	if ((fd < 0 || read(fd, b, 0) < 0 || BUFF_SIZE <= 0 || l == NULL))
 		return (-1);
-	if (fd == -1 || line == NULL)
-		return (-1);
-	if (!*str)
-	{
-		if (!(*str = (char*)malloc(sizeof(char) * (BUFF_SIZE + 1))))
-			return (-1);
-	}
-	return (0);
+	else
+		return (0);
 }
 
-char	*ft_read_line(char *str, int fd)
+char	*read_file(char *str, int fd)
 {
 	char	buff[BUFF_SIZE + 1];
 	int		ret;
+	char	*tmp;
 
 	while ((ret = read(fd, buff, BUFF_SIZE)) > 0)
 	{
 		buff[ret] = '\0';
-		if (!(str = ft_strjoin(str, buff)))
+		tmp = str;
+		str = ft_strjoin(str, buff);
+		if (!str)
 			return (NULL);
+		if (tmp)
+			ft_strdel(&tmp);
+		if (ft_strchr(buff, '\n'))
+			return (str);
 	}
 	return (str);
 }
 
+int		end_of_line(char *str)
+{
+	int i;
+
+	i = 0;
+	while (str[i] && str[i] != '\n')
+		i++;
+	return (i);
+}
+
 int		get_next_line(const int fd, char **line)
 {
-	static char	*str;
+	static char	*str = 0;
 	int			i;
+	char		*tmp;
 
-	if (ft_is_false(fd, &str, line) == -1)
+	if (!str)
+		str = ft_strdup("");
+	if (is_false(fd, line) == -1)
 		return (-1);
-	if (*str)
-		ft_strcpy(*line, str);
-	str = ft_read_line(str, fd);
-	i = 0;
-	if (str[i])
+	if (((str = read_file(str, fd)) == NULL) || !*str)
+		return (0);
+	i = end_of_line(str);
+	if (str[i] == '\0')
 	{
-		while (str[i] != '\n' && str[i])
-			i++;
-		if (i == 0)
-			(*line) = ft_strdup("");
-		else
-		{
-			*line = ft_strsub(str, 0, i);
-			str = &str[i + 1];
-		}
-		return (1);
+		*line = str;
+		str = NULL;
 	}
 	else
-		(*line) = ft_strdup("");
-	return (0);
+	{
+		*line = ft_strsub(str, 0, i);
+		tmp = ft_strsub(str, i + 1, ft_strlen(str + i + 1));
+		ft_strdel(&str);
+		str = tmp;
+	}
+	return (1);
 }
